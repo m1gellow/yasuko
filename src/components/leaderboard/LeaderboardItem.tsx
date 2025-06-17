@@ -10,7 +10,6 @@ interface LeaderboardItemProps {
   index: number;
   isCurrentUser: boolean;
   isOnline: boolean;
-  formatLastActivity: (date: string) => string;
   onSelect: () => void;
   onMessage: () => void;
 }
@@ -19,8 +18,6 @@ const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
   user, 
   index, 
   isCurrentUser,
-  isOnline,
-  formatLastActivity,
   onSelect,
   onMessage
 }) => {
@@ -117,18 +114,7 @@ const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
           <div className="flex justify-between text-sm mt-1">
             <div className="flex items-center gap-2">
               <span className="text-gray-400">{getCharacterInfo()} {user.level}</span>
-              <span className={`${isOnline ? 'bg-green-600' : 'bg-gray-600'} text-white text-xs px-2 py-0.5 rounded flex items-center`}>
-                {isOnline ? (
-                  <>
-                    <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
-                    ОНЛАЙН
-                  </>
-                ) : (
-                  <>
-                    {formatLastActivity(user.lastActivity)}
-                  </>
-                )}
-              </span>
+           
             </div>
             <button 
               className="flex items-center text-blue-400 hover:text-blue-300"

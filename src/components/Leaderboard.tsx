@@ -23,22 +23,6 @@ interface LeaderboardProps {
   currentUser: User;
 }
 
-// Функция для форматирования времени последней активности
-const formatLastActivity = (lastActiveDate: string): string => {
-  try {
-    const lastActive = new Date(lastActiveDate);
-    const now = new Date();
-    const diff = (now.getTime() - lastActive.getTime()) / 1000; // разница в секундах
-    
-    if (diff < 60) return 'только что';
-    if (diff < 3600) return `${Math.floor(diff / 60)}м назад`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}ч назад`;
-    return `${Math.floor(diff / 86400)}д назад`;
-  } catch (e) {
-    console.error("Error formatting last activity date:", e);
-    return "недавно";
-  }
-};
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
   const [filter, setFilter] = useState<'all' | 'top10' | 'online' | 'yasuko' | 'fishko'>('all');
@@ -430,7 +414,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
                     index={index}
                     isCurrentUser={user.id === (currentUser?.id || '')}
                     isOnline={onlineUsers[user.id] || false}
-                    formatLastActivity={formatLastActivity}
+                
                     onSelect={() => handleSelectUser(user)}
                     onMessage={() => handleOpenMessageModal(user)}
                   />

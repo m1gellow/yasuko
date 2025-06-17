@@ -8,7 +8,7 @@ import CharacterStats from './profile/CharacterStats';
 import AIAnalysis from './profile/AIAnalysis';
 import ReferralSection from './profile/ReferralSection';
 import AchievementsSection from './profile/AchievementsSection';
-import ProfileDetails from './profile/ProfileDetails';
+
 import ProfileStatusEditor from './profile/ProfileStatusEditor';
 import ProfileAvatarSelector from './profile/ProfileAvatarSelector';
 import LogoutConfirmModal from './profile/LogoutConfirmModal';
@@ -20,6 +20,7 @@ import { leaderboardService } from '../services/leaderboardService';
 import { userProgressService } from '../services/userProgressService';
 import NutCatcherGame from './games/NutCatcherGame';
 import { useTelegram } from '../contexts/TelegramContext';
+import ProfileDetails from './profile/ProfileDetails';
 
 const Profile: React.FC = () => {
   const { state, dispatch } = useGame();

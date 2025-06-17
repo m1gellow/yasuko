@@ -9,7 +9,6 @@ import StoreHeader from './store/StoreHeader';
 import InventorySection from './store/InventorySection';
 import PromoBanner from './store/PromoBanner';
 import StoreSearch from './store/StoreSearch';
-import StoreCategories from './store/StoreCategories';
 import GamesSection from './store/GamesSection';
 import ItemsSection from './store/ItemsSection';
 import EmptyState from './store/EmptyState';
@@ -228,11 +227,7 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
           onSearchChange={setSearchQuery} 
         />
         
-        {/* Фильтры по категориям */}
-        <StoreCategories
-          activeFilter={filter} 
-          onFilterChange={handleFilterChange} 
-        />
+  
         
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm">Найдено товаров: {filteredItems.length}</span>
