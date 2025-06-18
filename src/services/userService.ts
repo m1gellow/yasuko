@@ -20,6 +20,13 @@ export const userService = {
       // Сначала пытаемся получить из кэша
       const cachedUser = storage.get<User>(USER_STORAGE_KEY);
       if (cachedUser) {
+        // Даже если пользователь найден в кэше, обновляем last_login в фоне
+        // для корректной регенерации энергии
+        if (cachedUser.id) {
+          this.updateLastLogin(cachedUser.id).catch(err => {
+            console.warn('Failed to update last_login in background:', err);
+          });
+        }
         return cachedUser;
       }
 
@@ -49,12 +56,35 @@ export const userService = {
 
       console.log('User data found:', data);
 
+      // Обновляем last_login для регенерации энергии
+      await this.updateLastLogin(data.id);
+
       // Сохраняем в кэш
       storage.set<User>(USER_STORAGE_KEY, data, CACHE_EXPIRY_MINUTES);
       return data;
     } catch (error) {
       console.error('Error in getCurrentUser:', error);
       return null;
+    }
+  },
+
+  /**
+   * Обновление времени последнего входа для регенерации энергии
+   */
+  async updateLastLogin(userId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating last_login:', error);
+      } else {
+        console.log('Successfully updated last_login for user:', userId);
+      }
+    } catch (error) {
+      console.error('Error in updateLastLogin:', error);
     }
   },
 
@@ -377,10 +407,7 @@ export const userService = {
         console.log('User data fetched after creation:', newData);
 
         // Обновляем время последнего входа
-        await supabase
-          .from('users')
-          .update({ last_login: new Date().toISOString() })
-          .eq('id', newData.id);
+        await this.updateLastLogin(newData.id);
           
         // Отмечаем, что у пользователя есть игра "Ловитель орехов" по умолчанию
         localStorage.setItem('hasNutCatcherGame', 'true');
@@ -393,10 +420,7 @@ export const userService = {
       console.log('User data found:', data);
       
       // Обновляем время последнего входа
-      await supabase
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', data.id);
+      await this.updateLastLogin(data.id);
         
       // Отмечаем, что у пользователя есть игра "Ловитель орехов" по умолчанию
       localStorage.setItem('hasNutCatcherGame', 'true');
