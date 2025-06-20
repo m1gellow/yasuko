@@ -30,12 +30,6 @@ const Header: React.FC<HeaderProps> = ({
 
   const energyPercent = user ? (Math.round(user.energy.current) / user.energy.max) * 100 : 0;
 
-  const getEnergyStatusClass = () => {
-    if (energyPercent < 20) return 'from-red-600 to-red-800';
-    if (energyPercent < 50) return 'from-orange-600 to-orange-800';
-    return 'from-blue-600 to-blue-800';
-  };
-
   return (
     <header className="w-full bg-gradient-to-b from-[#1a1538] to-[#0f0c1d] text-white p-4 pb-6  shadow-lg">
       {/* Main Header with Logo and Notifications */}

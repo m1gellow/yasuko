@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { referralService } from '../../services/referralService';
 import { useTelegram } from '../../contexts/TelegramContext';
-import { BoltIcon, UsersIcon, GamepadIcon, XIcon } from 'lucide-react';
+import { BoltIcon, UsersIcon, GamepadIcon, XIcon, ZapIcon, GiftIcon } from 'lucide-react';
 
 interface EnergyEmptyModalProps {
   onClose: () => void;
@@ -18,7 +18,6 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
   const { user } = useAuth();
   const { telegram } = useTelegram();
 
-  // Создание реферальной ссылки для приглашения друга
   const handleCreateReferral = async () => {
     if (!user) {
       alert('Для создания приглашения необходимо войти в систему');
@@ -36,7 +35,6 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
         const shareableLink = referralService.generateShareableLink(result.code);
         setReferralLink(shareableLink);
         
-        // Если есть Telegram API, сразу открываем диалог шаринга
         if (telegram?.WebApp) {
           shareToTelegram(shareableLink);
         }
@@ -51,33 +49,22 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
     }
   };
 
-  // Копирование реферальной ссылки в буфер обмена
   const copyReferralLink = () => {
     if (!referralLink) return;
 
     navigator.clipboard.writeText(referralLink)
       .then(() => {
         setCopied(true);
-        // Тактильная отдача через Telegram API
         if (telegram?.HapticFeedback) {
           telegram.HapticFeedback.notificationOccurred('success');
         }
         
         setTimeout(() => setCopied(false), 2000);
-        
-        // Показываем сообщение об успехе и закрываем модальное окно через 2 секунды
         setShowSuccess(true);
         setTimeout(() => {
           setShowSuccess(false);
-          // Начисляем бонус пользователю за приглашение
-          dispatch({ 
-            type: 'REGEN_ENERGY', 
-            payload: 100 
-          });
-          dispatch({ 
-            type: 'CLAIM_REWARD', 
-            payload: { type: 'coins', amount: 100 } 
-          });
+          dispatch({ type: 'REGEN_ENERGY', payload: 100 });
+          dispatch({ type: 'CLAIM_REWARD', payload: { type: 'coins', amount: 100 } });
           onClose();
         }, 2000);
       })
@@ -87,154 +74,126 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
       });
   };
   
-  // Поделиться в Telegram
   const shareToTelegram = (link: string) => {
     try {
       if (telegram) {
-        // Подготовка текста для шаринга
         const shareText = `Присоединяйся к игре "Ясуко"! Получи +100 монет и +100 энергии по моей реферальной ссылке: ${link}`;
         
-        // Используем нативное API Telegram для шаринга
         if (telegram.WebApp) {
-          // Используем правильный метод для открытия ссылки шаринга в Telegram
           telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`);
         } else if (telegram.openTelegramLink) {
-          // Резервный вариант для некоторых версий API
           telegram.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`);
         } else {
-          // Если нет методов для открытия ссылки, используем стандартное окно
           window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`, '_blank');
         }
         
-        // Отмечаем успешное приглашение
         setShowSuccess(true);
-        
-        // Начисляем бонус немедленно для лучшего UX
-        dispatch({ 
-          type: 'REGEN_ENERGY', 
-          payload: 100 
-        });
-        
-        dispatch({ 
-          type: 'CLAIM_REWARD', 
-          payload: { type: 'coins', amount: 100 } 
-        });
-        
-        // Закрываем окно через небольшую задержку
+        dispatch({ type: 'REGEN_ENERGY', payload: 100 });
+        dispatch({ type: 'CLAIM_REWARD', payload: { type: 'coins', amount: 100 } });
         setTimeout(() => {
           setShowSuccess(false);
           onClose();
         }, 2000);
       } else {
-        // Если API нет, просто копируем ссылку
         copyReferralLink();
       }
     } catch (error) {
       console.error('Ошибка при попытке поделиться в Telegram:', error);
-      
-      // Запасной вариант - используем глобальный объект Telegram
       try {
         if (window.Telegram && window.Telegram.WebApp) {
           window.Telegram.WebApp.openTelegramLink(
             `https://t.me/share/url?url=${encodeURIComponent(link)}`
           );
-          
           setShowSuccess(true);
-          
-          // Начисляем бонус
-          dispatch({ 
-            type: 'REGEN_ENERGY', 
-            payload: 100 
-          });
-          dispatch({ 
-            type: 'CLAIM_REWARD', 
-            payload: { type: 'coins', amount: 100 } 
-          });
-          
+          dispatch({ type: 'REGEN_ENERGY', payload: 100 });
+          dispatch({ type: 'CLAIM_REWARD', payload: { type: 'coins', amount: 100 } });
           setTimeout(() => {
             setShowSuccess(false);
             onClose();
           }, 2000);
         } else {
-          // Если все методы не работают, просто копируем в буфер
           copyReferralLink();
         }
       } catch (backupError) {
-        // В крайнем случае просто копируем в буфер
         copyReferralLink();
       }
     }
   };
 
-  // Открытие мини-игры для восполнения энергии
   const openMiniGame = () => {
     window.dispatchEvent(new CustomEvent('open-mini-game'));
     onClose();
   };
 
-  // Обработчик для закрытия модального окна
   const handleClose = () => {
-    // Хаптик-фидбек при закрытии
     if (telegram?.HapticFeedback) {
       telegram.HapticFeedback.selectionChanged();
     }
-    
-    // Просто закрываем модальное окно
     onClose();
   };
 
   return (
- <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
       {showSuccess ? (
-        <div className="bg-green-600 rounded-lg p-8 text-center max-w-md animate-bounce shadow-lg">
-          <BoltIcon className="text-white mx-auto mb-4" size={48} />
-          <h2 className="text-xl font-bold text-white mb-2">БОНУС ПОЛУЧЕН!</h2>
-          <p className="text-white">+100 энергии и +100 монет добавлено</p>
+        <div className="bg-gradient-to-br from-green-600 to-emerald-800 rounded-xl p-8 text-center max-w-md shadow-xl border border-green-400/30">
+          <div className="bg-green-500/20 p-4 rounded-full inline-flex mb-4">
+            <GiftIcon className="text-white" size={48} />
+          </div>
+          <h2 className="text-2xl font-extrabold text-white mb-2">БОНУС ПОЛУЧЕН!</h2>
+          <p className="text-white/90">+100 энергии и +100 монет добавлено</p>
         </div>
       ) : (
-        <div className="bg-[#252538] rounded-lg w-full max-h-[70vh] flex flex-col max-w-[300px] shadow-xl">
-          <div className="bg-red-500 p-4 flex justify-between items-center">
+        <div className="bg-gradient-to-br from-[#1e183a] to-[#15122b] rounded-xl w-full max-w-sm shadow-xl border border-purple-500/30 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-red-600 to-red-800 p-4 flex justify-between items-center">
             <div className="flex items-center">
               <BoltIcon className="text-white mr-2" size={24} />
               <h2 className="text-xl font-bold text-white">ЭНЕРГИЯ ЗАКОНЧИЛАСЬ!</h2>
             </div>
             <button 
               onClick={handleClose} 
-              className="text-white hover:text-gray-200 p-1 rounded-full bg-red-600 hover:bg-red-700"
+              className="text-white/80 hover:text-white p-1 rounded-full hover:bg-red-700/50 transition-all"
               aria-label="Закрыть"
             >
               <XIcon size={24} />
             </button>
           </div>
           
-          <div className="p-6 flex-grow overflow-y-auto">
-            <p className="text-center text-lg mb-6">
+          {/* Content */}
+          <div className="p-6">
+            <p className="text-center text-gray-300 mb-6">
               Ваша энергия закончилась! Выберите способ восполнения:
             </p>
             
             <div className="space-y-4">
-              <div className="bg-[#323248] p-4 rounded-lg hover:bg-[#3d3d58] transition-colors shadow-md">
+              {/* Mini Game Option */}
+              <div className="bg-gradient-to-br from-[#2a1a4a] to-[#1a0e33] p-4 rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-all shadow-lg">
                 <div className="flex items-center mb-3">
-                  <GamepadIcon className="text-yellow-400 mr-3" size={24} />
-                  <h3 className="font-bold">Сыграть в мини-игру</h3>
+                  <div className="bg-yellow-500/20 p-2 rounded-lg mr-3">
+                    <GamepadIcon className="text-yellow-400" size={20} />
+                  </div>
+                  <h3 className="font-bold text-white">Сыграть в мини-игру</h3>
                 </div>
-                <p className="text-sm text-gray-300 mb-4">
+                <p className="text-sm text-gray-400 mb-4">
                   Играйте в мини-игру и получайте энергию за каждый пойманный орех!
                 </p>
                 <button 
                   onClick={openMiniGame}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-bold transition-colors"
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white py-3 rounded-lg font-bold transition-all shadow-md"
                 >
                   ИГРАТЬ
                 </button>
               </div>
               
-              <div className="bg-[#323248] p-4 rounded-lg hover:bg-[#3d3d58] transition-colors shadow-md">
+              {/* Referral Option */}
+              <div className="bg-gradient-to-br from-[#2a1a4a] to-[#1a0e33] p-4 rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-all shadow-lg">
                 <div className="flex items-center mb-3">
-                  <UsersIcon className="text-blue-400 mr-3" size={24} />
-                  <h3 className="font-bold">Пригласить друга</h3>
+                  <div className="bg-blue-500/20 p-2 rounded-lg mr-3">
+                    <UsersIcon className="text-blue-400" size={20} />
+                  </div>
+                  <h3 className="font-bold text-white">Пригласить друга</h3>
                 </div>
-                <p className="text-sm text-gray-300 mb-4">
+                <p className="text-sm text-gray-400 mb-4">
                   Пригласите друга и получите бонус: +100 энергии и +100 монет, когда друг зарегистрируется!
                 </p>
                 
@@ -242,7 +201,11 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
                   <button 
                     onClick={handleCreateReferral}
                     disabled={creatingReferral || !user}
-                    className={`w-full ${creatingReferral ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'} text-white py-3 rounded-lg font-bold transition-colors`}
+                    className={`w-full py-3 rounded-lg font-bold transition-all shadow-md ${
+                      creatingReferral 
+                        ? 'bg-gray-600 text-gray-400' 
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                    }`}
                   >
                     {creatingReferral ? (
                       <span className="flex items-center justify-center">
@@ -254,20 +217,24 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
                     )}
                   </button>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="bg-[#1E1E2D] p-3 rounded text-gray-300 break-all text-sm">
+                  <div className="space-y-3">
+                    <div className="bg-[#0f0c1d] p-3 rounded-lg text-gray-300 break-all text-sm border border-purple-500/20">
                       {referralLink}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={copyReferralLink}
-                        className={`py-2 rounded-lg font-bold ${copied ? 'bg-green-500' : 'bg-yellow-500 hover:bg-yellow-600'} text-black transition-colors`}
+                        className={`py-2 rounded-lg font-bold transition-all shadow-md ${
+                          copied 
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' 
+                            : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black'
+                        }`}
                       >
                         {copied ? 'СКОПИРОВАНО!' : 'КОПИРОВАТЬ'}
                       </button>
                       <button 
                         onClick={() => shareToTelegram(referralLink)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-bold transition-colors"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-2 rounded-lg font-bold transition-all shadow-md"
                       >
                         ОТПРАВИТЬ
                       </button>
@@ -277,19 +244,17 @@ const EnergyEmptyModal: React.FC<EnergyEmptyModalProps> = ({ onClose }) => {
               </div>
             </div>
             
-            <div className="mt-4 flex justify-center">
+            <div className="mt-6 text-center text-sm text-gray-400">
+              <div className="flex items-center justify-center mb-2">
+                <ZapIcon className="text-yellow-400 mr-2" size={16} />
+                <span>Энергия восстанавливается автоматически (1 каждые 3 минуты)</span>
+              </div>
               <button 
                 onClick={handleClose}
-                className="text-gray-400 hover:text-white bg-[#323248] hover:bg-[#3a3a55] px-4 py-2 rounded-lg transition-colors"
+                className="text-gray-400 hover:text-white bg-[#1e183a] hover:bg-[#2a1a4a] px-6 py-2 rounded-lg transition-all border border-purple-500/20 mt-2"
               >
                 Закрыть
               </button>
-            </div>
-            
-            <div className="mt-4 text-center text-sm text-gray-400">
-              Вы также можете подождать - энергия восстанавливается со временем
-              <br />
-              (1 энергия каждые 3 минуты)
             </div>
           </div>
         </div>
