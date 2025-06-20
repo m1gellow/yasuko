@@ -5,23 +5,45 @@ import { useAuth } from '../contexts/AuthContext';
 import NutCatcherGame from './games/NutCatcherGame';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../lib/supabase';
-import StoreHeader from './store/StoreHeader';
-import InventorySection from './store/InventorySection';
-import PromoBanner from './store/PromoBanner';
-import StoreSearch from './store/StoreSearch';
-import GamesSection from './store/GamesSection';
-import ItemsSection from './store/ItemsSection';
-import EmptyState from './store/EmptyState';
-import PromoCodeModal from './store/PromoCodeModal';
+import { useTelegram } from '../contexts/TelegramContext';
+import { 
+  Bitcoin, 
+  Gift, 
+  Search, 
+  ShoppingCart,
+  Zap, // для энергии
+  Heart, // для здоровья
+  Smile, // для настроения
+  Apple, // для еды
+  Shield, // для защиты
+  Wand2, // для бустеров
+  Gamepad, // для игр
+  Gem // для премиум-товаров
+} from 'lucide-react';
 
-// Импортируем компоненты из новой структуры
-
-
-interface StoreProps {
-  items?: StoreItem[];
-  userCoins: number;
-  onPurchase: (item: StoreItem) => void;
-}
+// Функция для получения иконки по категории товара
+const getCategoryIcon = (category: string) => {
+  switch(category) {
+    case 'energy':
+      return <Zap className="text-yellow-400" size={18} />;
+    case 'health':
+      return <Heart className="text-red-400" size={18} />;
+    case 'mood':
+      return <Smile className="text-green-400" size={18} />;
+    case 'food':
+      return <Apple className="text-orange-400" size={18} />;
+    case 'protection':
+      return <Shield className="text-blue-400" size={18} />;
+    case 'boosters':
+      return <Wand2 className="text-purple-400" size={18} />;
+    case 'games':
+      return <Gamepad className="text-pink-400" size={18} />;
+    case 'premium':
+      return <Gem className="text-teal-400" size={18} />;
+    default:
+      return <ShoppingCart className="text-gray-400" size={18} />;
+  }
+};
 
 const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
   const [filter, setFilter] = useState<'all' | 'food' | 'boosters' | 'accessories' | 'games'>('all');
@@ -33,27 +55,23 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
   const [promoCodeMessage, setPromoCodeMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showInventory, setShowInventory] = useState(false);
   const [purchasedItems, setPurchasedItems] = useState<StoreItem[]>([]);
-  const { user } = useAuth();
-  const { dispatch } = useGame();
-  
-  // Состояние для игры
   const [showNutCatcherGame, setShowNutCatcherGame] = useState(false);
   const [hasNutCatcherGame, setHasNutCatcherGame] = useState(false);
+  
+  const { user } = useAuth();
+  const { dispatch } = useGame();
+  const { telegram } = useTelegram();
 
-  // Загрузка товаров при монтировании компонента
   useEffect(() => {
     const loadStoreItems = async () => {
       setIsLoading(true);
       try {
-        // Получаем данные из Supabase
         const storeItems = await storeService.getStoreItems(false);
         setItems(storeItems);
         
-        // Проверяем, куплена ли игра
         const hasGame = localStorage.getItem('hasNutCatcherGame') === 'true';
         setHasNutCatcherGame(hasGame);
         
-        // Загружаем приобретенные товары
         if (user) {
           const purchased = await storeService.getPurchasedItems(user.id);
           setPurchasedItems(purchased);
@@ -73,7 +91,6 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
     
     loadStoreItems();
 
-    // Подписываемся на изменения в таблице game_items
     const subscription = supabase
       .channel('store-changes')
       .on('postgres_changes', 
@@ -83,25 +100,18 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
           table: 'game_items' 
         }, 
         async () => {
-          console.log('Обнаружены изменения в таблице game_items');
-          // При изменении данных обновляем список товаров
           const updatedItems = await storeService.refetchStoreItems();
           setItems(updatedItems);
         })
       .subscribe();
     
-    // Отписываемся при размонтировании компонента
     return () => {
       supabase.removeChannel(subscription);
     };
   }, [user]);
   
-  // Фильтрация товаров
   const filteredItems = items.filter(item => {
-    // Фильтрация по категории
     const categoryMatch = filter === 'all' || item.category === filter;
-    
-    // Фильтрация по поисковому запросу
     const searchMatch = searchQuery === '' || 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -109,16 +119,11 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
     return categoryMatch && searchMatch;
   });
   
-  // Группировка товаров по категориям
-  // Изменено: в специальные предложения попадают только товары категории 'energy'
   const specialOffers = filteredItems.filter(item => item.category === 'energy');
   const regularItems = filteredItems.filter(item => item.category !== 'energy');
   
-  // Функция для применения промо-кода
   const handleApplyPromoCode = async () => {
-    if (!promoCode.trim() || !user) {
-      return;
-    }
+    if (!promoCode.trim() || !user) return;
     
     try {
       const result = await storeService.applyPromoCode(user.id, promoCode.trim());
@@ -128,14 +133,9 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
         text: result.message
       });
       
-      if (result.success) {
-        setPromoCode('');
-      }
+      if (result.success) setPromoCode('');
       
-      // Сбрасываем сообщение через 3 секунды
-      setTimeout(() => {
-        setPromoCodeMessage(null);
-      }, 3000);
+      setTimeout(() => setPromoCodeMessage(null), 3000);
     } catch (error) {
       setPromoCodeMessage({
         type: 'error',
@@ -144,21 +144,15 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
     }
   };
   
-  // Обработчик покупки
   const handlePurchase = useCallback((item: StoreItem) => {
     if (userCoins >= item.price) {
-      // Стандартная логика покупки
       onPurchase(item);
-      
-      // Добавляем в список купленных товаров
       setPurchasedItems(prev => [...prev, item]);
       
-      // Сохраняем в localStorage для неавторизованных пользователей
       if (!user) {
         localStorage.setItem('app:purchasedItems', JSON.stringify([...purchasedItems, item]));
       }
       
-      // Специфичная логика для разных типов товаров
       if (item.name === 'ЛОВИТЕЛЬ ОРЕХОВ') {
         setHasNutCatcherGame(true);
         localStorage.setItem('hasNutCatcherGame', 'true');
@@ -166,23 +160,12 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
     }
   }, [userCoins, onPurchase, purchasedItems, user]);
   
-  // Обработчик игровых вознаграждений
   const handleGameEnergyEarned = (amount: number) => {
     if (amount > 0) {
-      // Начисляем энергию через контекст игры
-      dispatch({ 
-        type: 'REGEN_ENERGY', 
-        payload: amount 
-      });
+      dispatch({ type: 'REGEN_ENERGY', payload: amount });
     }
   };
-  
-  // Обработчик изменения фильтра
-  const handleFilterChange = (newFilter: any) => {
-    setFilter(newFilter);
-  };
 
-  // Принудительное обновление данных
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
@@ -195,104 +178,235 @@ const Store: React.FC<StoreProps> = ({ userCoins, onPurchase }) => {
     }
   };
 
-  return (
-    <div className="bg-gradient-to-b from-[#1a1625] to-[#0d0b12] min-h-screen p-4 pb-20 text-white">
-      <div className="max-w-md mx-auto">
-        {/* Шапка магазина с кнопкой инвентаря и отображением монет */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-bold text-yellow-500">МАГАЗИН</h1>
-          <div className="flex items-center gap-2">
-            <StoreHeader
-              userCoins={userCoins} 
-              showInventory={showInventory} 
-              setShowInventory={setShowInventory} 
-            />
+return (
+    <div className="flex flex-col items-center justify-center py-4 relative bg-[#1E1E2D] min-h-screen">
+      {/* Header with coins */}
+      <div className="w-full max-w-md mb-4 px-4">
+        <div className="flex justify-between items-center w-full bg-purple-900/50 p-3 rounded-lg shadow-lg">
+          <div className="flex flex-col items-start">
+            <p className="text-white text-sm font-bold">МАГАЗИН</p>
+            <button 
+              className={`mt-1 text-sm ${showInventory ? 'text-yellow-400' : 'text-gray-400'}`}
+              onClick={() => setShowInventory(!showInventory)}
+            >
+              {showInventory ? 'ТОВАРЫ' : 'ИНВЕНТАРЬ'}
+            </button>
+          </div>
+          
+          <div className="flex justify-center items-center">
+            <p className="text-white text-sm flex flex-col">
+              БАЛАНС: <span className="text-yellow-500 flex flex-row items-center justify-center font-bold text-xl">
+                {userCoins} <Bitcoin size={18} className="ml-1" />
+              </span>
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end">
+            <button 
+              className="text-sm text-white bg-purple-600 px-3 py-1 rounded-lg"
+              onClick={() => setShowPromoCodeModal(true)}
+            >
+              ПРОМОКОД
+            </button>
           </div>
         </div>
-        
-        {/* Раздел инвентаря, отображается только когда showInventory=true */}
-        {showInventory && (
-          <InventorySection
-            purchasedItems={purchasedItems}
-            onPlayNutCatcherGame={() => setShowNutCatcherGame(true)}
-          />
-        )}
-
-        {/* Баннер промо-акции */}
-        <PromoBanner onShowPromoCode={() => setShowPromoCodeModal(true)} />
-
-        {/* Строка поиска */}
-        <StoreSearch 
-          searchQuery={searchQuery} 
-          onSearchChange={setSearchQuery} 
-        />
-        
-  
-        
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-sm">Найдено товаров: {filteredItems.length}</span>
-          <span className="text-sm">Для: {items.length > 0 ? 'ЯСУКО' : 'Загрузка...'}</span>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : (
-          <>
-            {/* Секция игр */}
-            <GamesSection 
-              hasNutCatcherGame={hasNutCatcherGame}
-              userCoins={userCoins}
-              onBuyGame={() => {
-                // Ищем игру "Ловитель орехов" среди товаров
-                const nutCatcherGame = items.find(item => item.name === 'ЛОВИТЕЛЬ ОРЕХОВ');
-                if (nutCatcherGame) {
-                  handlePurchase(nutCatcherGame);
-                }
-              }}
-              onPlayGame={() => setShowNutCatcherGame(true)}
-              isVisible={(filter === 'all' || filter === 'games')}
-            />
-            
-            {/* Специальные предложения */}
-            <ItemsSection
-              title="СПЕЦИАЛЬНЫЕ ПРЕДЛОЖЕНИЯ"
-              items={specialOffers}
-              userCoins={userCoins}
-              onPurchase={handlePurchase}
-            />
-            
-            {/* Обычные товары */}
-            <ItemsSection 
-              title="ТОВАРЫ"
-              items={regularItems}
-              userCoins={userCoins}
-              onPurchase={handlePurchase}
-            />
-            
-            {/* Сообщение, если ничего не найдено */}
-            <EmptyState isVisible={filteredItems.length === 0} />
-          </>
-        )}
       </div>
-      
-      {/* Модальное окно для промокода */}
+
+      <div className="flex flex-row items-center justify-center w-full px-4 relative">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto relative">
+          {/* Inventory section */}
+          {showInventory && (
+            <div className="w-full mb-6 bg-gradient-to-br from-[#1a1538] to-[#0f0c1d] rounded-xl p-4 border border-purple-500/30 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-3 flex items-center">
+                <ShoppingCart className="mr-2 text-yellow-400" size={20} />
+                ВАШ ИНВЕНТАРЬ
+              </h3>
+              
+              {hasNutCatcherGame && (
+                <div className="bg-[#1E1E2D]/80 p-3 rounded-lg mb-3 border border-yellow-500/30">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium text-white">ЛОВИТЕЛЬ ОРЕХОВ</h4>
+                      <p className="text-xs text-gray-400">Игра для заработка энергии</p>
+                    </div>
+                    <button 
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-lg text-sm"
+                      onClick={() => setShowNutCatcherGame(true)}
+                    >
+                      ИГРАТЬ
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {purchasedItems.length === 0 && (
+                <div className="text-center py-4 text-gray-400">
+                  Ваш инвентарь пуст
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="w-full mb-4 relative">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Поиск товаров..."
+                className="w-full bg-[#1A1A27] text-white pl-10 pr-4 py-2 rounded-lg border border-purple-500/30 focus:border-purple-500/50 focus:outline-none"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Promo banner */}
+          <div 
+            className="w-full mb-6 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-4 border border-purple-500/30 cursor-pointer hover:border-purple-500/50 transition-all"
+            onClick={() => setShowPromoCodeModal(true)}
+          >
+            <div className="flex items-center">
+              <Gift className="text-yellow-400 mr-3" size={24} />
+              <div>
+                <h3 className="font-bold text-white">АКТИВИРУЙТЕ ПРОМОКОД</h3>
+                <p className="text-sm text-gray-300">Получите бонусные монеты</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Items list */}
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : (
+        <div className="w-full space-y-4">
+          {/* Special offers */}
+          {specialOffers.length > 0 && (
+            <div className="bg-gradient-to-br from-[#1a1538] to-[#0f0c1d] rounded-xl p-4 border border-purple-500/30 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-3">СПЕЦИАЛЬНЫЕ ПРЕДЛОЖЕНИЯ</h3>
+              <div className="space-y-3">
+                {specialOffers.map(item => (
+                  <div key={item.id} className="bg-[#1E1E2D]/80 p-3 rounded-lg border border-purple-500/20">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start">
+                        <div className="mr-3 mt-1">
+                          {getCategoryIcon(item.category)}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white">{item.name}</h4>
+                          <p className="text-xs text-gray-400">{item.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-yellow-400 font-bold flex items-center">
+                          {item.price} <Bitcoin size={14} className="ml-1" />
+                        </span>
+                        <button 
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-lg text-sm mt-2 disabled:opacity-50"
+                          onClick={() => handlePurchase(item)}
+                          disabled={userCoins < item.price}
+                        >
+                          КУПИТЬ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+              {/* Regular items */}
+          {regularItems.length > 0 && (
+            <div className="bg-gradient-to-br from-[#1a1538] to-[#0f0c1d] rounded-xl p-4 border border-purple-500/30 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-3">ТОВАРЫ</h3>
+              <div className="space-y-3">
+                {regularItems.map(item => (
+                  <div key={item.id} className="bg-[#1E1E2D]/80 p-3 rounded-lg border border-purple-500/20">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start">
+                        <div className="mr-3 mt-1">
+                          {getCategoryIcon(item.category)}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white">{item.name}</h4>
+                          <p className="text-xs text-gray-400">{item.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-yellow-400 font-bold flex items-center">
+                          {item.price} <Bitcoin size={14} className="ml-1" />
+                        </span>
+                        <button 
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-lg text-sm mt-2 disabled:opacity-50"
+                          onClick={() => handlePurchase(item)}
+                          disabled={userCoins < item.price}
+                        >
+                          КУПИТЬ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+              {/* Empty state */}
+              {filteredItems.length === 0 && !isLoading && (
+                <div className="bg-gradient-to-br from-[#1a1538] to-[#0f0c1d] rounded-xl p-6 text-center border border-purple-500/30">
+                  <ZapIcon className="mx-auto text-purple-500 mb-2" size={24} />
+                  <p className="text-gray-400">Товары не найдены</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
       {showPromoCodeModal && (
-        <PromoCodeModal 
-          promoCode={promoCode}
-          setPromoCode={setPromoCode}
-          promoCodeMessage={promoCodeMessage}
-          onApply={handleApplyPromoCode}
-          onClose={() => {
-            setShowPromoCodeModal(false);
-            setPromoCode('');
-            setPromoCodeMessage(null);
-          }}
-        />
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-[#1a1538] to-[#0f0c1d] rounded-xl p-6 w-full max-w-md border border-purple-500/30 shadow-lg">
+            <h3 className="text-lg font-bold text-white mb-4">АКТИВАЦИЯ ПРОМОКОДА</h3>
+            
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Введите промокод"
+                className="w-full bg-[#1A1A27] text-white px-4 py-2 rounded-lg border border-purple-500/30 focus:border-purple-500/50 focus:outline-none"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+              />
+              {promoCodeMessage && (
+                <p className={`mt-2 text-sm ${promoCodeMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                  {promoCodeMessage.text}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+                onClick={handleApplyPromoCode}
+              >
+                АКТИВИРОВАТЬ
+              </button>
+              <button
+                className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg font-medium"
+                onClick={() => {
+                  setShowPromoCodeModal(false);
+                  setPromoCodeMessage(null);
+                }}
+              >
+                ОТМЕНА
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      
-      {/* Модальное окно с игрой */}
+
       {showNutCatcherGame && (
         <NutCatcherGame
           onClose={() => setShowNutCatcherGame(false)}

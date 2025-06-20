@@ -14,6 +14,7 @@ import { leaderboardService } from './services/leaderboardService';
 import { useOnboarding } from './hooks/useOnboarding';
 import MainContent from './components/layout/MainContent';
 import './index.css';
+import { generateMainContentProps } from './utils/generateMainContentProps';
 
 // Обертка для App с провайдерами
 const AppWithProviders: React.FC = () => {
@@ -515,70 +516,29 @@ const AppContent: React.FC = () => {
   if (showOnboarding) {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
-  const MainContentProps = {
-    user: user
-      ? {
-          id: user.id || 'guest',
-          name: user.name || 'Гость',
-          username: user.phone || 'guest', // Используем phone как username
-          phone: parseInt(user.phone || '0') || 0,
-          level: state.level.current,
-          energy: {
-            current: Math.round(state.energy.current),
-            max: state.energy.max,
-            replenishRate: state.energy.regenRate,
-          },
-          score: Math.round(state.coins),
-          rating: state.progress.current,
-          maxRating: state.progress.required,
-          items: [],
-          achievements: [],
-          lastActive: new Date(),
-          dailyLoginDay: 1,
-          position: userRank,
-          telegram_id: user.telegram_id ? parseInt(user.telegram_id) : undefined,
-          avatar_url: user.avatar_url || undefined,
-          promo_codes_used: user.promo_codes_used || null,
-        }
-      : {
-          id: 'guest',
-          name: 'Гость',
-          username: 'guest',
-          phone: 0,
-          level: state.level.current,
-          energy: {
-            current: Math.round(state.energy.current),
-            max: state.energy.max,
-            replenishRate: state.energy.regenRate,
-          },
-          score: Math.round(state.coins),
-          rating: state.progress.current,
-          maxRating: state.progress.required,
-          items: [],
-          achievements: [],
-          lastActive: new Date(),
-          dailyLoginDay: 1,
-          position: 0,
-        },
-    position: userRank,
-    notifications: notifications,
-    onMarkAsRead: handleMarkAsRead,
-    onMarkAllAsRead: handleMarkAllAsRead,
-    onDeleteNotification: handleDeleteNotification,
-    state: state,
-    tapTarget: tapTarget,
-    onRefillEnergy: handleRefillEnergy,
-    onTap: handleTap,
-    onLevelUp: handleLevelUp,
-    showCharacterCard: showCharacterCard,
-    getRecommendations: getRecommendations,
-    onPurchase: handlePurchase,
-    onTabChange: setActiveTab,
-    onToggleCharacterCard: handleToggleCharacterCard,
-    showPurchaseNotification: showPurchaseNotification,
-    lastPurchase: lastPurchase,
-    isTapAnimationActive: isTapAnimationActive,
-  };
+ const MainContentProps = generateMainContentProps(
+  user,
+  state,
+  userRank,
+  notifications,
+  tapTarget,
+  showCharacterCard,
+  showPurchaseNotification,
+  lastPurchase,
+  isTapAnimationActive,
+  {
+    handleMarkAsRead,
+    handleMarkAllAsRead,
+    handleDeleteNotification,
+    handleRefillEnergy,
+    handleTap,
+    handleLevelUp,
+    handlePurchase,
+    setActiveTab,
+    handleToggleCharacterCard,
+    getRecommendations,
+  }
+);
 
   return (
     <div className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 min-h-screen text-white relative">

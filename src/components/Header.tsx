@@ -8,8 +8,6 @@ import { SunIcon, ZapIcon, TrophyIcon } from 'lucide-react';
 
 interface HeaderProps {
   user: User;
-  devMode?: boolean;
-  onRefillEnergy: () => void;
   notifications: any[];
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
@@ -18,18 +16,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({
   user,
-  devMode = false,
-  onRefillEnergy,
+
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
   onDelete,
 }) => {
-  const { state } = useGame();
-  const { user: authUser } = useAuth();
-
-  const energyPercent = user ? (Math.round(user.energy.current) / user.energy.max) * 100 : 0;
-
   return (
     <header className="w-full bg-gradient-to-b from-[#1a1538] to-[#0f0c1d] text-white p-4 pb-6  shadow-lg">
       {/* Main Header with Logo and Notifications */}

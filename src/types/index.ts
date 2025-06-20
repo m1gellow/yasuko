@@ -1,4 +1,4 @@
-import { GameState } from "../contexts/game";
+import { GameState } from '../contexts/game';
 
 // Common types used throughout the application
 export interface MainContentProps {
@@ -35,6 +35,11 @@ export interface MainContentProps {
   isTapAnimationActive: boolean;
 }
 
+export interface TabContentProps {
+  activeTab: string;
+  tabName: string;
+  children: React.ReactNode;
+}
 
 export interface User {
   id: string;
@@ -61,7 +66,7 @@ export interface User {
 }
 
 export interface UserItem {
-    id: string;
+  id: string;
   name: string;
   itemId: string;
   level: number;
@@ -82,7 +87,7 @@ export interface Achievement {
 }
 
 export interface Reward {
-  type: "coins" | "energy" | "item" | "booster";
+  type: 'coins' | 'energy' | 'item' | 'booster';
   amount: number;
   itemId?: string;
 }
@@ -96,7 +101,7 @@ export interface TapTarget {
   requiredTaps: number;
   currentTaps: number;
   energy: number;
-  state: "sleeping" | "active" | "transitioning";
+  state: 'sleeping' | 'active' | 'transitioning';
 }
 
 export interface StoreItem {
@@ -107,7 +112,7 @@ export interface StoreItem {
   price: number;
   discountPercent?: number;
   originalPrice?: number;
-  category: "energy" | "food" | "boosters" | "accessories" | "games";
+  category: 'energy' | 'food' | 'boosters' | 'accessories' | 'games';
   duration?: string;
   effect?: string;
   isPermanent?: boolean;
@@ -124,12 +129,12 @@ export interface Tournament {
   prizePool: number;
   userPosition: number;
   requiredPosition: number;
-  type: "weekly" | "monthly";
+  type: 'weekly' | 'monthly';
 }
 
 export interface Notification {
   id: string;
-  type: "achievement" | "rating" | "reward" | "system" | "message";
+  type: 'achievement' | 'rating' | 'reward' | 'system' | 'message';
   title: string;
   message: string;
   icon?: string;
