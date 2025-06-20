@@ -14,8 +14,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 interface MainContentProps {
   activeTab: string;
-  user: User | null;
-  notifications: any[];
+  user: User;
+  position: number;
+  notifications: Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: string;
+  }>;
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onDeleteNotification: (id: string) => void;
@@ -25,7 +33,11 @@ interface MainContentProps {
   onTap: (points: number) => void;
   onLevelUp: () => void;
   showCharacterCard: boolean;
-  getRecommendations: () => any[];
+  getRecommendations: () => Array<{
+    type: string;
+    message: string;
+    priority: number;
+  }>;
   onPurchase: (item: StoreItem) => void;
   onTabChange: (tab: string) => void;
   onToggleCharacterCard: () => void;
@@ -33,6 +45,7 @@ interface MainContentProps {
   lastPurchase: StoreItem | null;
   isTapAnimationActive: boolean;
 }
+
 
 const MainContent: React.FC<MainContentProps> = memo(({
   activeTab,

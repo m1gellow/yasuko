@@ -1,24 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Header from './components/Header';
-import TapGame from './components/TapGame';
-import Leaderboard from './components/Leaderboard';
-import Store from './components/Store';
-import Profile from './components/Profile';
-import Gifts from './components/Gifts';
-import Navigation from './components/Navigation';
-// Убран импорт AIAssistant, так как он не используется в AppContent
-// import AIAssistant from './components/AIAssistant'; 
-import AuthScreen from './components/auth/AuthScreen';
-import TelegramAuthScreen from './components/auth/TelegramAuthScreen';
-import TelegramHybridAuthScreen from './components/auth/TelegramHybridAuthScreen';
 import TelegramOptionsScreen from './components/auth/TelegramOptionsScreen';
 import OnboardingScreen from './components/onboarding/OnboardingScreen';
 import { GameProvider, useGame } from './contexts/GameContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TapTarget, StoreItem } from './types';
-import { storage } from './utils/storage';
 import { gameService } from './services/gameService';
 import { userService } from './services/userService';
 import { referralService } from './services/referralService';
@@ -47,15 +34,15 @@ const AppWithProviders: React.FC = () => {
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('game');
   const [tapTarget, setTapTarget] = useState<TapTarget>({
-    id: "target-1",
-    name: "ОРЕХ",
+    id: 'target-1',
+    name: 'ОРЕХ',
     basePoints: 1,
-    image: "/assets/oreh.png",
+    image: '/assets/oreh.png',
     level: 1,
     requiredTaps: 100,
     currentTaps: 0,
     energy: 1,
-    state: "active"
+    state: 'active',
   });
   const [purchasedItems, setPurchasedItems] = useState<StoreItem[]>([]);
   const [showPurchaseNotification, setShowPurchaseNotification] = useState(false);
@@ -67,7 +54,7 @@ const AppContent: React.FC = () => {
   const [referralCodeProcessed, setReferralCodeProcessed] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [userRank, setUserRank] = useState<number>(0);
-  
+
   const { state, dispatch } = useGame();
   const { user, loading: authLoading } = useAuth();
   const { telegram, user: telegramUser, isReady: isTelegramReady } = useTelegram();
@@ -93,7 +80,7 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const processReferralCode = async () => {
       if (!user || referralCodeProcessed) return;
-      
+
       const referralCode = referralService.extractReferralCodeFromUrl();
       if (referralCode) {
         try {
@@ -104,24 +91,26 @@ const AppContent: React.FC = () => {
             if (telegram?.HapticFeedback) {
               telegram.HapticFeedback.notificationOccurred('success');
             }
-            
+
             // Применяем награду
             if (result.reward.coins) {
-              dispatch({ 
-                type: 'CLAIM_REWARD', 
-                payload: { type: 'coins', amount: result.reward.coins } 
+              dispatch({
+                type: 'CLAIM_REWARD',
+                payload: { type: 'coins', amount: result.reward.coins },
               });
             }
-            
+
             if (result.reward.energy) {
-              dispatch({ 
-                type: 'REGEN_ENERGY', 
-                payload: result.reward.energy 
+              dispatch({
+                type: 'REGEN_ENERGY',
+                payload: result.reward.energy,
               });
             }
-            
+
             // Показываем уведомление о полученной награде
-            alert(`Реферальный код активирован! Вы получили: ${result.reward.coins ? result.reward.coins + ' монет' : ''} ${result.reward.energy ? result.reward.energy + ' энергии' : ''}`);
+            alert(
+              `Реферальный код активирован! Вы получили: ${result.reward.coins ? result.reward.coins + ' монет' : ''} ${result.reward.energy ? result.reward.energy + ' энергии' : ''}`,
+            );
           }
         } catch (error) {
           console.error('Error processing referral code:', error);
@@ -130,7 +119,7 @@ const AppContent: React.FC = () => {
         setReferralCodeProcessed(true);
       }
     };
-    
+
     processReferralCode();
   }, [user, dispatch, referralCodeProcessed, telegram]);
 
@@ -148,7 +137,7 @@ const AppContent: React.FC = () => {
     };
 
     loadUserRank();
-    
+
     // Обновляем ранг каждые 5 минут
     const rankInterval = setInterval(loadUserRank, 5 * 60 * 1000);
     return () => clearInterval(rankInterval);
@@ -160,19 +149,19 @@ const AppContent: React.FC = () => {
       if (user) {
         // Устанавливаем ID пользователя в GameContext
         dispatch({ type: 'SET_USER_ID', payload: user.id });
-        
+
         // Загружаем персонажа пользователя из базы
         try {
           const character = await gameService.getCharacter(user.id);
           if (character) {
             // Обновляем состояние на основе данных из базы
-            dispatch({ 
+            dispatch({
               type: 'UPDATE_CHARACTER',
               payload: {
                 rating: character.rating || 0,
                 mood: character.mood || 50,
                 satiety: character.satiety || 50,
-              }
+              },
             });
 
             // Обновляем уровень на основе рейтинга
@@ -180,23 +169,23 @@ const AppContent: React.FC = () => {
             if (currentLevel !== state.level.current) {
               dispatch({
                 type: 'SET_LEVEL',
-                payload: currentLevel
+                payload: currentLevel,
               });
             }
 
             // Обновляем тап-таргет на основе уровня
-            setTapTarget(prev => ({
+            setTapTarget((prev) => ({
               ...prev,
               level: currentLevel,
               name: getLevelName(currentLevel),
               requiredTaps: currentLevel >= 2 ? 999999 : 100,
-              currentTaps: (character.rating || 0) % 100
+              currentTaps: (character.rating || 0) % 100,
             }));
           }
         } catch (error) {
           console.error('Error loading character data:', error);
         }
-        
+
         // Проверяем, нужно ли показывать экран авторизации
         setShowAuthScreen(false);
         setShowTelegramAuth(false);
@@ -208,14 +197,17 @@ const AppContent: React.FC = () => {
 
     initUser();
   }, [authLoading, dispatch, user, state.level.current, showTelegramAuth]);
-  
+
   // Функция для определения имени персонажа по уровню
   const getLevelName = (level: number): string => {
     switch (level) {
-      case 1: return "ОРЕХ";
+      case 1:
+        return 'ОРЕХ';
       case 2:
-      case 3: return "БЕЛКА";
-      default: return "ЯСУКО";
+      case 3:
+        return 'БЕЛКА';
+      default:
+        return 'ЯСУКО';
     }
   };
 
@@ -228,14 +220,11 @@ const AppContent: React.FC = () => {
         // Получаем реальные уведомления из базы данных
         const userNotifications = await notificationService.getUserNotifications(user.id, 5);
         setNotifications(userNotifications);
-        
+
         // Подписываемся на новые уведомления
-        const unsubscribe = notificationService.subscribeToNotifications(
-          user.id,
-          (newNotification) => {
-            setNotifications(prev => [newNotification, ...prev].slice(0, 5));
-          }
-        );
+        const unsubscribe = notificationService.subscribeToNotifications(user.id, (newNotification) => {
+          setNotifications((prev) => [newNotification, ...prev].slice(0, 5));
+        });
 
         return () => {
           if (typeof unsubscribe === 'function') {
@@ -253,7 +242,7 @@ const AppContent: React.FC = () => {
             title: 'Новое достижение',
             message: 'Вы совершили 100 тапов! Получите награду в профиле.',
             is_read: false,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           },
           {
             id: '2',
@@ -261,119 +250,131 @@ const AppContent: React.FC = () => {
             title: 'Рейтинг улучшен',
             message: 'Ваша позиция в рейтинге: #99',
             is_read: false,
-            created_at: new Date().toISOString()
-          }
+            created_at: new Date().toISOString(),
+          },
         ]);
       }
     };
-    
+
     loadNotifications();
   }, [user]);
 
   // Рекомендации для AI Assistant на основе состояния игры
   const getRecommendations = useCallback(() => {
     const recommendations = [];
-    
+
     // Проверяем уровень энергии
     if (state.energy.current < state.energy.max * 0.2) {
       recommendations.push({
         type: 'energy',
         message: 'Ваша энергия низкая. Восполните её или купите бустер в магазине.',
-        priority: 5
+        priority: 5,
       });
     }
-    
+
     // Проверяем параметры персонажа
     if (state.profile.hunger < 30) {
       recommendations.push({
         type: 'feed',
         message: 'Ваш персонаж голоден! Покормите его, чтобы избежать снижения здоровья.',
-        priority: 4
+        priority: 4,
       });
     }
-    
+
     if (state.profile.happiness < 30) {
       recommendations.push({
         type: 'play',
         message: 'Ваш персонаж грустит. Поиграйте с ним, чтобы повысить его настроение.',
-        priority: 3
+        priority: 3,
       });
     }
-    
+
     // Напоминаем о ежедневных заданиях
     if (!state.dailyTasks.completedToday) {
       recommendations.push({
         type: 'coins',
         message: 'Не забудьте выполнить ежедневные задания для получения дополнительных монет!',
-        priority: 2
+        priority: 2,
       });
     }
-    
+
     // Если скоро новый уровень
     const levelProgress = state.progress.current / state.progress.required;
     if (levelProgress > 0.8 && levelProgress < 1 && state.level.current < 2) {
       recommendations.push({
         type: 'level',
         message: 'Вы почти достигли нового уровня! Немного усилий и ваш персонаж эволюционирует!',
-        priority: 1
+        priority: 1,
       });
     }
-    
+
     // Если энергия на исходе, предложим сыграть в мини-игру
     if (state.energy.current < 10 && state.energy.current > 0) {
       recommendations.push({
         type: 'energy',
         message: 'Энергия заканчивается! Сыграйте в мини-игру или пригласите друга, чтобы получить +100 энергии!',
-        priority: 6
+        priority: 6,
       });
     }
-    
+
     return recommendations;
-  }, [state.energy.current, state.energy.max, state.profile.hunger, 
-      state.profile.happiness, state.dailyTasks.completedToday, 
-      state.progress.current, state.progress.required, state.level.current]);
+  }, [
+    state.energy.current,
+    state.energy.max,
+    state.profile.hunger,
+    state.profile.happiness,
+    state.dailyTasks.completedToday,
+    state.progress.current,
+    state.progress.required,
+    state.level.current,
+  ]);
 
   // Handle tap - реализация логики: 1 тап = -1 энергия, +1 к общему рейтингу, +1 к личному рейтингу, +1 монета
-  const handleTap = useCallback((points: number) => {
-    if (state.energy.current <= 0) return;
+  const handleTap = useCallback(
+    (points: number) => {
+      if (state.energy.current <= 0) return;
 
-    setIsTapAnimationActive(true);
-    setTimeout(() => setIsTapAnimationActive(false), 300);
+      setIsTapAnimationActive(true);
+      setTimeout(() => setIsTapAnimationActive(false), 300);
 
-    // Обновляем очки и энергию через GameContext
-    dispatch({ type: 'TAP', payload: points });
+      // Обновляем очки и энергию через GameContext
+      dispatch({ type: 'TAP', payload: points });
 
-    // Обновляем количество тапов
-    setTapTarget(prevTarget => {
-      const newTaps = prevTarget.currentTaps + 1;
-      const newLevel = Math.floor(state.progress.current / 100) + 1;
-      
-      // Если это изменило уровень, обновляем все данные
-      if (newLevel !== prevTarget.level) {
+      // Обновляем количество тапов
+      setTapTarget((prevTarget) => {
+        const newTaps = prevTarget.currentTaps + 1;
+        const newLevel = Math.floor(state.progress.current / 100) + 1;
+
+        // Если это изменило уровень, обновляем все данные
+        if (newLevel !== prevTarget.level) {
+          return {
+            ...prevTarget,
+            level: newLevel,
+            name: getLevelName(newLevel),
+            currentTaps: state.progress.current % 100,
+            requiredTaps: newLevel >= 2 ? 999999 : 100, // 100 тапов на первый уровень, потом эволюции нет
+          };
+        }
+
+        // Иначе просто обновляем текущие тапы
         return {
           ...prevTarget,
+          currentTaps: newTaps,
           level: newLevel,
-          name: getLevelName(newLevel),
-          currentTaps: state.progress.current % 100,
-          requiredTaps: newLevel >= 2 ? 999999 : 100, // 100 тапов на первый уровень, потом эволюции нет
         };
-      }
-      
-      // Иначе просто обновляем текущие тапы
-      return {
-        ...prevTarget,
-        currentTaps: newTaps,
-        level: newLevel
-      };
-    });
+      });
 
-    // Если пользователь авторизован, обновляем данные на сервере
-    if (user) {
-      userService.updateUser(user.id, {
-        total_clicks: (user.total_clicks || 0) + 1
-      }).catch(console.error);
-    }
-  }, [dispatch, state.energy.current, state.progress.current, user]);
+      // Если пользователь авторизован, обновляем данные на сервере
+      if (user) {
+        userService
+          .updateUser(user.id, {
+            total_clicks: (user.total_clicks || 0) + 1,
+          })
+          .catch(console.error);
+      }
+    },
+    [dispatch, state.energy.current, state.progress.current, user],
+  );
 
   // Handle level up
   const handleLevelUp = useCallback(() => {
@@ -381,15 +382,15 @@ const AppContent: React.FC = () => {
 
     // Ограничиваем максимальный уровень до 2 (белка)
     const finalLevel = Math.min(newLevel, 2);
-    
-    setTapTarget(prevTarget => ({
+
+    setTapTarget((prevTarget) => ({
       ...prevTarget,
       level: finalLevel,
       name: getLevelName(finalLevel),
       currentTaps: 0,
       requiredTaps: finalLevel >= 2 ? 999999 : 100, // Последний уровень - белка
       basePoints: prevTarget.basePoints + 0.5, // Небольшое повышение базовых очков
-      state: 'active'
+      state: 'active',
     }));
 
     // Level up через GameContext
@@ -397,63 +398,68 @@ const AppContent: React.FC = () => {
 
     // Обновляем данные на сервере если пользователь авторизован
     if (user) {
-      gameService.updateCharacter(user.id, {
-        rating: 0, // Сбрасываем рейтинг при переходе на новый уровень
-        last_interaction: new Date().toISOString()
-      }).catch(console.error);
+      gameService
+        .updateCharacter(user.id, {
+          rating: 0, // Сбрасываем рейтинг при переходе на новый уровень
+          last_interaction: new Date().toISOString(),
+        })
+        .catch(console.error);
     }
   }, [dispatch, user, tapTarget.level]);
 
   // Handle purchase
-  const handlePurchase = useCallback((item: StoreItem) => {
-    // Check if user has enough coins
-    if (state.coins < item.price) return;
-    
-    // Update user score через GameContext
-    dispatch({ type: 'BUY_ITEM', payload: { price: item.price } });
+  const handlePurchase = useCallback(
+    (item: StoreItem) => {
+      // Check if user has enough coins
+      if (state.coins < item.price) return;
 
-    // Handle different item types
-    if (item.category === 'energy') {
-      // If it's a permanent energy upgrade
-      if (item.isPermanent) {
-        dispatch({ 
-          type: 'UPDATE_ENERGY_MAX', 
-          payload: state.energy.max + 50 
-        });
-      } else {
-        // If it's an instant energy refill
-        dispatch({ 
-          type: 'REGEN_ENERGY', 
-          payload: 200
-        });
-      }
-    } else if (item.category === 'games') {
-      // Если покупается игра, добавляем ее в инвентарь
-      if (user) {
-        userService.addItemToUserInventory(user.id, item.id).catch(console.error);
-      }
-    }
+      // Update user score через GameContext
+      dispatch({ type: 'BUY_ITEM', payload: { price: item.price } });
 
-    // Add to purchased items
-    setPurchasedItems(prev => [...prev, item]);
-    
-    // Show purchase notification
-    setLastPurchase(item);
-    setShowPurchaseNotification(true);
-    setTimeout(() => setShowPurchaseNotification(false), 3000);
-  }, [dispatch, state.coins, state.energy.max, user]);
+      // Handle different item types
+      if (item.category === 'energy') {
+        // If it's a permanent energy upgrade
+        if (item.isPermanent) {
+          dispatch({
+            type: 'UPDATE_ENERGY_MAX',
+            payload: state.energy.max + 50,
+          });
+        } else {
+          // If it's an instant energy refill
+          dispatch({
+            type: 'REGEN_ENERGY',
+            payload: 200,
+          });
+        }
+      } else if (item.category === 'games') {
+        // Если покупается игра, добавляем ее в инвентарь
+        if (user) {
+          userService.addItemToUserInventory(user.id, item.id).catch(console.error);
+        }
+      }
+
+      // Add to purchased items
+      setPurchasedItems((prev) => [...prev, item]);
+
+      // Show purchase notification
+      setLastPurchase(item);
+      setShowPurchaseNotification(true);
+      setTimeout(() => setShowPurchaseNotification(false), 3000);
+    },
+    [dispatch, state.coins, state.energy.max, user],
+  );
 
   // Handle energy refill
   const handleRefillEnergy = useCallback(() => {
-    dispatch({ 
-      type: 'REGEN_ENERGY', 
-      payload: state.energy.max - state.energy.current 
+    dispatch({
+      type: 'REGEN_ENERGY',
+      payload: state.energy.max - state.energy.current,
     });
   }, [dispatch, state.energy.max, state.energy.current]);
 
   // Обработчик переключения карточки персонажа
   const handleToggleCharacterCard = useCallback(() => {
-    setShowCharacterCard(prev => !prev);
+    setShowCharacterCard((prev) => !prev);
   }, []);
 
   // Обработчики для уведомлений
@@ -461,43 +467,35 @@ const AppContent: React.FC = () => {
     if (user) {
       try {
         await notificationService.markAsRead(id, user.id);
-        setNotifications(prev => 
-          prev.map(notification => 
-            notification.id === id ? { ...notification, is_read: true } : notification
-          )
+        setNotifications((prev) =>
+          prev.map((notification) => (notification.id === id ? { ...notification, is_read: true } : notification)),
         );
       } catch (error) {
         console.error('Ошибка при отметке уведомления как прочитанного:', error);
       }
     }
   };
-  
+
   const handleMarkAllAsRead = async () => {
     if (user) {
       try {
         await notificationService.markAllAsRead(user.id);
-        setNotifications(prev => 
-          prev.map(notification => ({ ...notification, is_read: true }))
-        );
-      } catch (error) { 
+        setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })));
+      } catch (error) {
         console.error('Ошибка при отметке всех уведомлений как прочитанных:', error);
       }
     }
   };
-  
+
   const handleDeleteNotification = async (id: string) => {
     if (user) {
       try {
         await notificationService.deleteNotification(id, user.id);
-        setNotifications(prev => 
-          prev.filter(notification => notification.id !== id)
-        );
+        setNotifications((prev) => prev.filter((notification) => notification.id !== id));
       } catch (error) {
         console.error('Ошибка при удалении уведомления:', error);
         // Все равно удаляем из локального состояния
-        setNotifications(prev => 
-          prev.filter(notification => notification.id !== id)
-        );
+        setNotifications((prev) => prev.filter((notification) => notification.id !== id));
       }
     }
   };
@@ -517,159 +515,88 @@ const AppContent: React.FC = () => {
   if (showOnboarding) {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
+  const MainContentProps = {
+    user: user
+      ? {
+          id: user.id || 'guest',
+          name: user.name || 'Гость',
+          username: user.phone || 'guest', // Используем phone как username
+          phone: parseInt(user.phone || '0') || 0,
+          level: state.level.current,
+          energy: {
+            current: Math.round(state.energy.current),
+            max: state.energy.max,
+            replenishRate: state.energy.regenRate,
+          },
+          score: Math.round(state.coins),
+          rating: state.progress.current,
+          maxRating: state.progress.required,
+          items: [],
+          achievements: [],
+          lastActive: new Date(),
+          dailyLoginDay: 1,
+          position: userRank,
+          telegram_id: user.telegram_id ? parseInt(user.telegram_id) : undefined,
+          avatar_url: user.avatar_url || undefined,
+          promo_codes_used: user.promo_codes_used || null,
+        }
+      : {
+          id: 'guest',
+          name: 'Гость',
+          username: 'guest',
+          phone: 0,
+          level: state.level.current,
+          energy: {
+            current: Math.round(state.energy.current),
+            max: state.energy.max,
+            replenishRate: state.energy.regenRate,
+          },
+          score: Math.round(state.coins),
+          rating: state.progress.current,
+          maxRating: state.progress.required,
+          items: [],
+          achievements: [],
+          lastActive: new Date(),
+          dailyLoginDay: 1,
+          position: 0,
+        },
+    position: userRank,
+    notifications: notifications,
+    onMarkAsRead: handleMarkAsRead,
+    onMarkAllAsRead: handleMarkAllAsRead,
+    onDeleteNotification: handleDeleteNotification,
+    state: state,
+    tapTarget: tapTarget,
+    onRefillEnergy: handleRefillEnergy,
+    onTap: handleTap,
+    onLevelUp: handleLevelUp,
+    showCharacterCard: showCharacterCard,
+    getRecommendations: getRecommendations,
+    onPurchase: handlePurchase,
+    onTabChange: setActiveTab,
+    onToggleCharacterCard: handleToggleCharacterCard,
+    showPurchaseNotification: showPurchaseNotification,
+    lastPurchase: lastPurchase,
+    isTapAnimationActive: isTapAnimationActive,
+  };
 
   return (
     <div className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 min-h-screen text-white relative">
       {/* Экран авторизации */}
       {showAuthScreen && !showTelegramAuth && (
-        <TelegramOptionsScreen 
-          onSuccess={() => setShowAuthScreen(false)} 
-          onClose={() => setShowAuthScreen(false)} 
-        />
+        <TelegramOptionsScreen onSuccess={() => setShowAuthScreen(false)} onClose={() => setShowAuthScreen(false)} />
       )}
-
       {/* Экран авторизации через Telegram */}
       {showTelegramAuth && (
-        <TelegramOptionsScreen
-          onSuccess={handleTelegramAuthSuccess} 
-          onClose={() => setShowTelegramAuth(false)}
-        />
+        <TelegramOptionsScreen onSuccess={handleTelegramAuthSuccess} onClose={() => setShowTelegramAuth(false)} />
       )}
-      
       {!showAuthScreen && !showTelegramAuth && (
         <Routes>
-          {/* ИЗМЕНЕНО: path с "/\" на "/" */}
-          <Route path="/" element={
-            <MainContent
-              activeTab={activeTab}
-              user={{
-                ...user,
-                position: userRank
-              }}
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDeleteNotification={handleDeleteNotification}
-              state={state}
-              tapTarget={tapTarget}
-              onRefillEnergy={handleRefillEnergy}
-              onTap={handleTap}
-              onLevelUp={handleLevelUp}
-              showCharacterCard={showCharacterCard}
-              getRecommendations={getRecommendations}
-              onPurchase={handlePurchase}
-              onTabChange={setActiveTab}
-              onToggleCharacterCard={handleToggleCharacterCard}
-              showPurchaseNotification={showPurchaseNotification}
-              lastPurchase={lastPurchase}
-              isTapAnimationActive={isTapAnimationActive}
-            />
-          } />
-          <Route path="/leaderboard" element={
-            <MainContent
-              activeTab="leaderboard"
-              user={{
-                ...user,
-                position: userRank
-              }}
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDeleteNotification={handleDeleteNotification}
-              state={state}
-              tapTarget={tapTarget}
-              onRefillEnergy={handleRefillEnergy}
-              onTap={handleTap}
-              onLevelUp={handleLevelUp}
-              showCharacterCard={showCharacterCard}
-              getRecommendations={getRecommendations}
-              onPurchase={handlePurchase}
-              onTabChange={setActiveTab}
-              onToggleCharacterCard={handleToggleCharacterCard}
-              showPurchaseNotification={showPurchaseNotification}
-              lastPurchase={lastPurchase}
-              isTapAnimationActive={isTapAnimationActive}
-            />
-          } />
-          <Route path="/store" element={
-            <MainContent
-              activeTab="store"
-              user={{
-                ...user,
-                position: userRank
-              }}
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDeleteNotification={handleDeleteNotification}
-              state={state}
-              tapTarget={tapTarget}
-              onRefillEnergy={handleRefillEnergy}
-              onTap={handleTap}
-              onLevelUp={handleLevelUp}
-              showCharacterCard={showCharacterCard}
-              getRecommendations={getRecommendations}
-              onPurchase={handlePurchase}
-              onTabChange={setActiveTab}
-              onToggleCharacterCard={handleToggleCharacterCard}
-              showPurchaseNotification={showPurchaseNotification}
-              lastPurchase={lastPurchase}
-              isTapAnimationActive={isTapAnimationActive}
-            />
-          } />
-          <Route path="/profile" element={
-            <MainContent
-              activeTab="profile"
-              user={{
-                ...user,
-                position: userRank
-              }}
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDeleteNotification={handleDeleteNotification}
-              state={state}
-              tapTarget={tapTarget}
-              onRefillEnergy={handleRefillEnergy}
-              onTap={handleTap}
-              onLevelUp={handleLevelUp}
-              showCharacterCard={showCharacterCard}
-              getRecommendations={getRecommendations}
-              onPurchase={handlePurchase}
-              onTabChange={setActiveTab}
-              onToggleCharacterCard={handleToggleCharacterCard}
-              showPurchaseNotification={showPurchaseNotification}
-              lastPurchase={lastPurchase}
-              isTapAnimationActive={isTapAnimationActive}
-            />
-          } />
-          <Route path="/gifts" element={
-            <MainContent
-              activeTab="gifts"
-              user={{
-                ...user,
-                position: userRank
-              }}
-              notifications={notifications}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onDeleteNotification={handleDeleteNotification}
-              state={state}
-              tapTarget={tapTarget}
-              onRefillEnergy={handleRefillEnergy}
-              onTap={handleTap}
-              onLevelUp={handleLevelUp}
-              showCharacterCard={showCharacterCard}
-              getRecommendations={getRecommendations}
-              onPurchase={handlePurchase}
-              onTabChange={setActiveTab}
-              onToggleCharacterCard={handleToggleCharacterCard}
-              showPurchaseNotification={showPurchaseNotification}
-              lastPurchase={lastPurchase}
-              isTapAnimationActive={isTapAnimationActive}
-            />
-          } />
-          {/* ИЗМЕНЕНО: Navigate to с "/\" на "/" */}
+          <Route path="/" element={<MainContent {...MainContentProps} activeTab={activeTab} />} />
+          <Route path="/leaderboard" element={<MainContent {...MainContentProps} activeTab={'leaderboard'} />} />
+          <Route path="/store" element={<MainContent {...MainContentProps} activeTab={'store'} />} />
+          <Route path="/profile" element={<MainContent {...MainContentProps} activeTab={'profile'} />} />
+          <Route path="/gifts" element={<MainContent {...MainContentProps} activeTab={'gifts'} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
