@@ -498,8 +498,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
           key={user.id}
           className={`bg-gradient-to-br from-[#1e183a] to-[#15122b] rounded-xl p-4 border ${user.id === (currentUser?.id || '') ? 'border-yellow-500/40 shadow-lg shadow-yellow-500/10' : 'border-purple-500/20'} hover:border-purple-500/40 transition-all`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" onClick={() => handleSelectUser(user)}>
             {/* Left side - Rank and Avatar */}
+            {/* onClick={() => handleSelectUser(user) */}
             <div className="flex items-center space-x-3">
               <div className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold ${
                 index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-black' :
@@ -510,7 +511,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
                 {index + 1}
               </div>
               
-              <div className="relative">
+              <div >
                 <img 
                   src={user.avatar || '/default-avatar.png'} 
                   alt={user.name}
@@ -522,7 +523,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
               </div>
               
               <div>
-                <h3 className="font-semibold text-white flex items-center">
+                <h3 className="font-semibold text-[15px] text-white flex items-center">
                   {user.name}
                   {user.id === (currentUser?.id || '') && (
                     <span className="ml-2 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded">Вы</span>
@@ -540,12 +541,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
               </div>
               
               <div className="flex space-x-2 mt-2">
-                <button 
-                  onClick={() => handleSelectUser(user)}
-                  className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded transition-all"
-                >
-                  Профиль
-                </button>
+
                 <button 
                   onClick={() => handleOpenMessageModal(user)}
                   className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-2 py-1 rounded transition-all"
