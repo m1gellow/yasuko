@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-gradient-to-b from-[#1a1538] to-[#0f0c1d] text-white p-4 pb-6 rounded-b-xl shadow-lg">
+    <header className="w-full bg-gradient-to-b from-[#1a1538] to-[#0f0c1d] text-white p-4 pb-6  shadow-lg">
       {/* Main Header with Logo and Notifications */}
       <div className="flex justify-between items-center mb-4">
         <div className="inline-flex items-center bg-gradient-to-r from-yellow-500 to-orange-500 text-transparent bg-clip-text">
@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
           max={user ? user.energy.max : 0}
           height="h-2"
           className="w-full"
-          color={energyPercent < 20 ? 'red' : energyPercent < 50 ? 'orange' : 'blue'}
+         
         />
       </div>
 

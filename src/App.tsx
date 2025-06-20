@@ -519,7 +519,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-radial from-[#9601C5] to-[#30284D] min-h-screen text-white relative">
+    <div className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 min-h-screen text-white relative">
       {/* Экран авторизации */}
       {showAuthScreen && !showTelegramAuth && (
         <TelegramOptionsScreen 
