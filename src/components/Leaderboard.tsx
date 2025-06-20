@@ -3,7 +3,6 @@ import { User } from '../types';
 import { 
   TrophyIcon, 
   RefreshCwIcon,
-  BellIcon, 
   GiftIcon,
   ChevronRightIcon,
   CrownIcon,
@@ -16,11 +15,6 @@ import { tournamentService } from '../services/tournamentService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import MessageModal from './leaderboard/MessageModal';
-import CompetitionCard from './leaderboard/CompetitionCard';
-import DailyBonusSection from './leaderboard/DailyBonusSection';
-import LeaderboardItem from './leaderboard/LeaderboardItem';
-import LeaderboardFilters from './leaderboard/LeaderboardFilters';
-import NotificationsSection from './leaderboard/NotificationsSection';
 import { useTelegram } from '../contexts/TelegramContext';
 
 interface LeaderboardProps {
@@ -309,9 +303,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
     }
   };
 
-  const handleSelectUser = (user: LeaderboardUser) => {
-    setSelectedUser(user);
-  };
 
   const handleOpenMessageModal = (user: LeaderboardUser) => {
     setSelectedUser(user);
@@ -498,9 +489,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentUser }) => {
           key={user.id}
           className={`bg-gradient-to-br from-[#1e183a] to-[#15122b] rounded-xl p-4 border ${user.id === (currentUser?.id || '') ? 'border-yellow-500/40 shadow-lg shadow-yellow-500/10' : 'border-purple-500/20'} hover:border-purple-500/40 transition-all`}
         >
-          <div className="flex items-center justify-between" onClick={() => handleSelectUser(user)}>
+          <div className="flex items-center justify-between" onClick={() =>   setSelectedUser(user)}>
             {/* Left side - Rank and Avatar */}
-            {/* onClick={() => handleSelectUser(user) */}
             <div className="flex items-center space-x-3">
               <div className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold ${
                 index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-black' :

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { User } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import Notifications from './Notifications';
 import ProgressBar from './ProgressBar';
+import { SunIcon, ZapIcon, TrophyIcon } from 'lucide-react';
 
 interface HeaderProps {
   user: User;
@@ -27,20 +28,22 @@ const Header: React.FC<HeaderProps> = ({
   const { state } = useGame();
   const { user: authUser } = useAuth();
 
-  // Рассчитываем процент энергии для отображения
   const energyPercent = user ? (Math.round(user.energy.current) / user.energy.max) * 100 : 0;
 
-  // Определяем класс для энергии в зависимости от её количества
   const getEnergyStatusClass = () => {
-    if (energyPercent < 20) return 'bg-red-500';
-    if (energyPercent < 50) return 'bg-orange-500';
-    return 'bg-[#2468F2]';
+    if (energyPercent < 20) return 'from-red-600 to-red-800';
+    if (energyPercent < 50) return 'from-orange-600 to-orange-800';
+    return 'from-blue-600 to-blue-800';
   };
 
   return (
-    <header className="w-full bg-[#1E1E2D]/40 text-white p-4 rounded-b-lg">
-      <div className="flex justify-between items-center mb-3">
-        <h1 className="text-xl md:text-2xl font-bold text-yellow-500">ЯСУКО</h1>
+    <header className="w-full bg-gradient-to-b from-[#1a1538] to-[#0f0c1d] text-white p-4 pb-6 rounded-b-xl shadow-lg">
+      {/* Main Header with Logo and Notifications */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="inline-flex items-center bg-gradient-to-r from-yellow-500 to-orange-500 text-transparent bg-clip-text">
+          <SunIcon className="mr-2" size={24} />
+          <h1 className="text-2xl font-extrabold tracking-wide">ЯСУКО</h1>
+        </div>
         <div className="flex items-center gap-2">
           <Notifications
             notifications={notifications}
@@ -51,33 +54,45 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-[#FFD700] font-bold text-sm md:text-base">
-            ЭНЕРГИЯ {user ? Math.round(user.energy.current) : 0}/{user ? user.energy.max : 0}
+      {/* Energy Progress */}
+      <div className="mb-4 bg-gradient-to-br from-[#1e183a] to-[#15122b] rounded-xl p-4 border border-purple-500/20 shadow-lg">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center">
+            <ZapIcon className="text-yellow-400 mr-2" size={18} />
+            <span className="text-white font-semibold">
+              ЭНЕРГИЯ: {user ? Math.round(user.energy.current) : 0}/{user ? user.energy.max : 0}
+            </span>
+          </div>
+          <span className="text-xs bg-black/30 px-2 py-1 rounded text-gray-300">
+            +1 каждые 3 мин
           </span>
         </div>
-
-        <ProgressBar current={user ? Math.round(user.energy.current) : 0} max={user ? user.energy.max : 0} />
-
-        <p className="text-xs md:text-sm text-[#85A4FF] mt-1">+1 ЗА ТАПИНГ — +1 ЧЕРЕЗ 3МИН</p>
+        
+        <ProgressBar 
+          current={user ? Math.round(user.energy.current) : 0} 
+          max={user ? user.energy.max : 0}
+          height="h-2"
+          className="w-full"
+          color={energyPercent < 20 ? 'red' : energyPercent < 50 ? 'orange' : 'blue'}
+        />
       </div>
 
-      <div className="mt-4 flex justify-center items-center">
-        <div className="text-center">
-          <p className="text-[#FFD700] font-bold text-sm md:text-base">
-            РЕЙТИНГ ЯСУКО: {state.progress.current} ИЗ {state.progress.required}
-          </p>
-        </div>
-      </div>
-
-      {/* Текущий рейтинг пользователя */}
+      {/* User Ranking */}
       {user && user.position && (
-        <div className="mt-3 flex justify-center">
-          <div className="bg-[#252538] px-3 py-1 rounded-full">
-            <span className="text-sm">
-              Ваша позиция в рейтинге: <strong className="text-yellow-400">#{user.position}</strong>
-            </span>
+        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-xl p-4 border border-purple-500/30 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-yellow-500/20 p-2 rounded-lg mr-3">
+                <TrophyIcon className="text-yellow-400" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">ВАШ РЕЙТИНГ</h3>
+                <p className="text-sm text-gray-300">Обновляется каждые 5 минут</p>
+              </div>
+            </div>
+            <div className="bg-black/30 px-4 py-2 rounded-lg border border-yellow-500/30">
+              <span className="font-bold text-yellow-400 text-lg">#{user.position}</span>
+            </div>
           </div>
         </div>
       )}
